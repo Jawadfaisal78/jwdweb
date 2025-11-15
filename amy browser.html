@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>S.A Samad Enterprises | Professional Billing</title>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.min.js"></script>
+
+<style>
+/* ===== LUXURY DESIGN SYSTEM ===== */
+:root {
+    --primary: #003E7E;
+    --secondary: #0078D7;
+    --accent: #00C4B4;
+    --gold: #FFD700;
+    --light: #f8f9ff;
+    --dark: #0f172a;
+    --glass: rgba(255, 255, 255, 0.15);
+    --shadow: 0 8px 32px rgba(0,0,0,0.1);
+    --border: 1px solid rgba(255,255,255,0.2);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #e0e7ff 0%, #c3dafe 100%);
+    color: var(--dark);
+    min-height: 100vh;
+    overflow-x: hidden;
+    animation: fadeIn 1s ease-in;
+}
+body.dark-mode {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* ===== LOGIN ===== */
+#loginScreen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+    display: flex; justify-content: center; align-items: center; z-index: 9999;
+    animation: fadeIn 0.6s;
+}
+.login-box {
+    background: var(--glass); backdrop-filter: blur(12px);
+    padding: 40px; border-radius: 20px; width: 380px; text-align: center;
+    box-shadow: var(--shadow); border: var(--border); color: white;
+    animation: slideUp 0.6s ease-out;
+}
+.login-box h2 {
+    font-weight: 700; font-size: 2em; margin-bottom: 20px;
+    background: linear-gradient(45deg, var(--gold), #fff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.login-box input {
+    width: 100%; margin: 12px 0; padding: 14px; border: none; border-radius: 12px;
+    background: rgba(255,255,255,0.2); color: white; font-size: 1em;
+    backdrop-filter: blur(5px); transition: 0.3s;
+}
+.login-box input::placeholder { color: rgba(255,255,255,0.7); }
+.login-box input:focus { outline: none; background: rgba(255,255,255,0.3); box-shadow: 0 0 15px rgba(0,196,180,0.5); }
+.login-box button {
+    width: 100%; padding: 14px; background: linear-gradient(45deg, var(--secondary), var(--accent));
+    color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600;
+    margin-top: 10px; transition: 0.3s;
+}
+.login-box button:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,120,215,0.4); }
+
+/* ===== HEADER ===== */
+header {
+    background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+    color: white; padding: 25px; text-align: center; box-shadow: var(--shadow);
+    border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
+    position: relative; overflow: hidden;
+}
+header::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    animation: float 3s infinite;
+}
+header h1 {
+    margin: 0; font-size: 2.2em; font-weight: 700; text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+/* ===== MENU ===== */
+.menu {
+    display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 20px;
+}
+.menu button, .load-label {
+    background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); color: white;
+    border: var(--border); padding: 12px 20px; border-radius: 14px; cursor: pointer;
+    font-weight: 500; transition: all 0.4s; font-size: 14px; position: relative; overflow: hidden;
+}
+.menu button::before {
+    content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: 0.6s;
+}
+.menu button:hover::before { left: 100%; }
+.menu button:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+
+/* ===== DASHBOARD ===== */
+.dashboard {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;
+    margin: 30px auto; max-width: 1000px; padding: 0 15px;
+}
+.card {
+    background: var(--glass); backdrop-filter: blur(12px); padding: 25px; border-radius: 18px;
+    box-shadow: var(--shadow); border: var(--border); text-align: center;
+    animation: slideUp 0.6s ease-out; transition: 0.4s;
+}
+.card:hover { transform: translateY(-8px); box-shadow: 0 15px 35px rgba(0,0,0,0.15); }
+.card h3 { margin: 0; font-size: 2em; font-weight: 700; color: var(--secondary); }
+.card p { margin-top: 8px; font-weight: 500; color: #64748b; }
+
+/* ===== MAIN ===== */
+main { padding: 30px 15px; display: flex; flex-direction: column; align-items: center; gap: 30px; }
+.entry-form, .entries {
+    background: var(--glass); backdrop-filter: blur(15px); padding: 30px; border-radius: 20px;
+    box-shadow: var(--shadow); border: var(--border); width: 100%; max-width: 1000px;
+    animation: slideUp 0.7s ease-out;
+}
+.entry-form input, .filters input, .filters select {
+    padding: 14px; border: none; border-radius: 12px; background: rgba(255,255,255,0.2);
+    color: var(--dark); font-size: 1em; margin: 8px 0; backdrop-filter: blur(5px); transition: 0.3s; width: 100%;
+}
+.entry-form input:focus, .filters input:focus {
+    outline: none; background: white; box-shadow: 0 0 15px rgba(0,196,180,0.3);
+}
+.entry-form button, .entries button {
+    padding: 12px 20px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600;
+    margin: 5px; transition: 0.4s;
+}
+#saveEntryBtn { background: linear-gradient(45deg, var(--secondary), var(--accent)); color: white; }
+#cancelEditBtn { background: #94a3b8; color: white; }
+
+/* ===== TABLE ===== */
+table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14.5px; }
+th { background: linear-gradient(45deg, var(--primary), var(--secondary)); color: white; padding: 15px; text-align: left; font-weight: 600; }
+td { padding: 14px; border-bottom: 1px solid rgba(0,0,0,0.1); transition: 0.3s; }
+tr:hover { background: rgba(0,120,215,0.05); }
+.editBtn { background: #10b981; color: white; }
+.deleteBtn { background: #ef4444; color: white; }
+
+/* ===== EXPORT MENU ===== */
+.export-menu {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: white; padding: 30px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    z-index: 10000; display: none; width: 90%; max-width: 500px; animation: pulse 0.5s;
+}
+.export-menu button {
+    width: 100%; padding: 16px; margin: 10px 0; border: none; border-radius: 14px;
+    font-weight: 600; color: white; cursor: pointer; transition: 0.3s;
+    background: linear-gradient(45deg, var(--primary), var(--secondary));
+}
+.export-menu button:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+
+/* ===== WATERMARK ===== */
+.watermark {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg);
+    font-size: 80px; font-weight: 900; color: rgba(0,62,126,0.08); pointer-events: none;
+    z-index: 0; letter-spacing: 10px; white-space: nowrap; font-family: 'Roboto', sans-serif;
+}
+
+/* ===== FOOTER ===== */
+footer { text-align: center; padding: 20px; color: #64748b; font-size: 0.9em; }
+
+/* ===== TOGGLE ===== */
+#darkModeToggle {
+    position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; border-radius: 50%;
+    background: var(--secondary); color: white; border: none; font-size: 24px; cursor: pointer;
+    box-shadow: var(--shadow); z-index: 1000; animation: pulse 2s infinite;
+}
+
+/* ===== LOADING ===== */
+#loadingOverlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8);
+    display: none; justify-content: center; align-items: center; z-index: 99999; flex-direction: column; color: white;
+}
+.loader { border: 8px solid #f3f3f3; border-top: 8px solid var(--accent); border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+
+/* ===== RESULT ===== */
+.billing-result { padding:15px; background:var(--glass); border-radius:12px; margin-top:15px; font-weight:600; color:var(--secondary); }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .menu { flex-direction: column; align-items: center; }
+    .dashboard { grid-template-columns: 1fr; }
+    .login-box { width: 90%; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+    <div class="login-box">
+        <h2>S.A Samad Enterprises</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <p style="margin-top:15px; font-size:12px; opacity:0.8;">Hint: Mian / 4150</p>
+    </div>
+</div>
+
+<!-- HEADER -->
+<header>
+    <h1>S.A Samad Enterprises Pvt LTD</h1>
+    <div class="menu">
+        <label class="load-label" for="loadFile">Import</label>
+        <input type="file" id="loadFile" style="display:none;">
+        <button id="addBillingEntryBtn">Add Entry</button>
+        <button id="calculateBtn">Calculate</button>
+        <button id="exportBtn">Export</button>
+        <button onclick="toggleDarkMode()">Dark Mode</button>
+    </div>
+</header>
+
+<!-- WATERMARK -->
+<div class="watermark">S.A SAMAD</div>
+
+<main>
+    <!-- DASHBOARD -->
+    <div class="dashboard">
+        <div class="card"><h3 id="totalClients">0</h3><p>Total Clients</p></div>
+        <div class="card"><h3 id="thisMonth">₨0</h3><p>This Month</p></div>
+        <div class="card"><h3 id="totalBilled">₨0</h3><p>Total Billed</p></div>
+    </div>
+
+    <!-- FORM -->
+    <section class="entry-form">
+        <h2 id="formTitle">Add Billing Entry</h2>
+        <input type="text" id="billingCompany" placeholder="Company Name">
+        <input type="month" id="billingMonth">
+        <input type="date" id="billingDate">
+        <input type="number" id="billingAmount" placeholder="Total Amount">
+        <input type="number" id="billingTotalDays" placeholder="Total Days" value="30">
+        <input type="number" id="billingDays" placeholder="Billed Days">
+        <button id="saveEntryBtn">Save</button>
+        <button id="cancelEditBtn" style="display:none;">Cancel</button>
+    </section>
+
+    <!-- TABLE -->
+    <section class="entries">
+        <h2>Billing Entries</h2>
+        <div class="filters">
+            <input type="text" id="searchInput" placeholder="Search Company..." onkeyup="filterTable()">
+            <select id="monthFilter" onchange="filterTable()">
+                <option value="">All Months</option>
+            </select>
+        </div>
+        <table id="billingTable">
+            <thead>
+                <tr>
+                    <th>Company</th><th>Month</th><th>Date</th><th>Amount</th><th>Days</th><th>Per Day</th><th>Billed</th><th>Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <div id="billingResult" class="billing-result" style="display:none;"></div>
+    </section>
+</main>
+
+<footer>
+    <p>© 2025 S.A Samad Enterprises Pvt LTD — Professional Billing System</p>
+</footer>
+
+<button id="darkModeToggle" onclick="toggleDarkMode()">Dark Mode</button>
+
+<!-- EXPORT MENU -->
+<div id="exportMenu" class="export-menu">
+    <h3 style="text-align:center; margin-bottom:20px; color:var(--primary);">Export Invoice</h3>
+    <button onclick="exportFormat('pdf')">PDF (Full Text + Color)</button>
+    <button onclick="exportFormat('excel')">Excel (Styled + Color)</button>
+    <button onclick="exportFormat('word')">Word (.docx)</button>
+    <button onclick="exportFormat('print')">Print</button>
+    <button onclick="closeExportMenu()" style="background:#64748b;">Cancel</button>
+</div>
+
+<!-- LOADING -->
+<div id="loadingOverlay">
+    <div class="loader"></div>
+    <p id="loadingText">Generating...</p>
+</div>
+
+<script>
+let billingEntries = JSON.parse(localStorage.getItem('billingEntries')) || [];
+let editIndex = -1;
+
+// LOGIN
+function login() {
+    const user = document.getElementById('username').value.trim();
+    const pass = document.getElementById('password').value;
+    if (user === 'Mian' && pass === '4150') {
+        document.getElementById('loginScreen').style.display = 'none';
+        setTimeout(loadApp, 300);
+    } else {
+        alert('Invalid credentials!');
+    }
+}
+
+function loadApp() {
+    updateDashboard();
+    updateBillingTable();
+    populateMonthFilter();
+}
+
+// SAVE ENTRY
+document.getElementById('saveEntryBtn').addEventListener('click', saveEntry);
+function saveEntry() {
+    const company = document.getElementById('billingCompany').value.trim();
+    const month = document.getElementById('billingMonth').value;
+    const date = document.getElementById('billingDate').value;
+    const totalAmount = parseFloat(document.getElementById('billingAmount').value) || 0;
+    const totalDays = parseInt(document.getElementById('billingTotalDays').value) || 30;
+    const billedDays = parseInt(document.getElementById('billingDays').value) || 0;
+
+    if (!company || !month || !date || totalAmount <= 0 || billedDays <= 0) {
+        alert("Please fill all fields correctly.");
+        return;
+    }
+
+    const perDay = totalAmount / totalDays;
+    const billedAmount = perDay * billedDays;
+
+    const entry = { company, month, date, totalAmount, totalDays, billedDays, perDay, billedAmount };
+
+    if (editIndex >= 0) {
+        billingEntries[editIndex] = entry;
+        editIndex = -1;
+        document.getElementById('formTitle').textContent = 'Add Billing Entry';
+        document.getElementById('cancelEditBtn').style.display = 'none';
+    } else {
+        billingEntries.push(entry);
+    }
+
+    clearForm();
+    saveToStorage();
+    updateBillingTable();
+    populateMonthFilter();
+}
+
+function clearForm() {
+    ['billingCompany','billingMonth','billingDate','billingAmount','billingDays'].forEach(id => 
+        document.getElementById(id).value = '');
+    document.getElementById('billingTotalDays').value = '30';
+}
+
+document.getElementById('cancelEditBtn').addEventListener('click', () => {
+    editIndex = -1;
+    clearForm();
+    document.getElementById('formTitle').textContent = 'Add Billing Entry';
+    document.getElementById('cancelEditBtn').style.display = 'none';
+});
+
+function editEntry(index) {
+    const e = billingEntries[index];
+    document.getElementById('billingCompany').value = e.company;
+    document.getElementById('billingMonth').value = e.month;
+    document.getElementById('billingDate').value = e.date;
+    document.getElementById('billingAmount').value = e.totalAmount;
+    document.getElementById('billingTotalDays').value = e.totalDays;
+    document.getElementById('billingDays').value = e.billedDays;
+
+    editIndex = index;
+    document.getElementById('formTitle').textContent = 'Edit Entry';
+    document.getElementById('cancelEditBtn').style.display = 'inline-block';
+    window.scrollTo(0, 0);
+}
+
+function deleteEntry(index) {
+    if (confirm('Delete this entry?')) {
+        billingEntries.splice(index, 1);
+        saveToStorage();
+        updateBillingTable();
+        populateMonthFilter();
+    }
+}
+
+function saveToStorage() {
+    localStorage.setItem('billingEntries', JSON.stringify(billingEntries));
+    updateDashboard();
+}
+
+function updateDashboard() {
+    const uniqueClients = new Set(billingEntries.map(e => e.company)).size;
+    const currentMonth = new Date().toISOString().slice(0,7);
+    const thisMonthTotal = billingEntries.filter(e => e.month === currentMonth).reduce((sum, e) => sum + e.billedAmount, 0);
+    const totalBilled = billingEntries.reduce((sum, e) => sum + e.billedAmount, 0);
+
+    document.getElementById('totalClients').textContent = uniqueClients;
+    document.getElementById('thisMonth').textContent = `₨${thisMonthTotal.toFixed(2)}`;
+    document.getElementById('totalBilled').textContent = `₨${totalBilled.toFixed(2)}`;
+}
+
+function populateMonthFilter() {
+    const months = [...new Set(billingEntries.map(e => e.month))].sort();
+    const select = document.getElementById('monthFilter');
+    select.innerHTML = '<option value="">All Months</option>';
+    months.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = new Date(m + '-01').toLocaleString('default', { month: 'long', year: 'numeric' });
+        select.appendChild(opt);
+    });
+}
+
+function filterTable() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const month = document.getElementById('monthFilter').value;
+    updateBillingTable(search, month);
+}
+
+function updateBillingTable(search = '', month = '') {
+    const tbody = document.querySelector("#billingTable tbody");
+    tbody.innerHTML = "";
+    const filtered = billingEntries.filter(e => 
+        e.company.toLowerCase().includes(search) && (!month || e.month === month)
+    );
+
+    filtered.forEach((entry, idx) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${entry.company}</td>
+            <td>${new Date(entry.month + '-01').toLocaleString('default', { month: 'short', year: 'numeric' })}</td>
+            <td>${entry.date}</td>
+            <td style="color:#d97706; font-weight:600;">₨${entry.totalAmount.toFixed(2)}</td>
+            <td>${entry.billedDays}</td>
+            <td style="color:#16a34a;">₨${entry.perDay.toFixed(2)}</td>
+            <td style="color:#dc2626; font-weight:600;">₨${entry.billedAmount.toFixed(2)}</td>
+            <td>
+                <button class="editBtn" onclick="editEntry(${idx})">Edit</button>
+                <button class="deleteBtn" onclick="deleteEntry(${idx})">Delete</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// CALCULATE
+document.getElementById("calculateBtn").addEventListener("click", () => {
+    if (billingEntries.length === 0) return alert("No entries.");
+    let total = billingEntries.reduce((sum, e) => sum + e.billedAmount, 0);
+    const resultDiv = document.getElementById("billingResult");
+    resultDiv.style.display = "block";
+    resultDiv.innerHTML = `<strong style="color:#dc2626;">Total Billed: ₨${total.toFixed(2)}</strong>`;
+});
+
+// EXPORT
+document.getElementById("exportBtn").addEventListener("click", () => {
+    if (billingEntries.length === 0) return alert("No data to export.");
+    document.getElementById("exportMenu").style.display = "block";
+});
+function closeExportMenu() {
+    document.getElementById("exportMenu").style.display = "none";
+}
+
+function exportFormat(type) {
+    closeExportMenu();
+    showLoading(`Exporting as ${type.toUpperCase()}...`);
+    setTimeout(() => {
+        if (type === 'pdf') exportPdf();
+        else if (type === 'excel') exportExcel();
+        else if (type === 'word') exportWord();
+        else if (type === 'print') window.print();
+        hideLoading();
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+    }, 800);
+}
+
+function showLoading(text) {
+    document.getElementById("loadingText").textContent = text;
+    document.getElementById("loadingOverlay").style.display = "flex";
+}
+function hideLoading() {
+    document.getElementById("loadingOverlay").style.display = "none";
+}
+
+// EXPORT FUNCTIONS
+function exportPdf() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(40); doc.setTextColor(220,220,220); doc.text("S.A SAMAD", 50, 150, { angle: 45 });
+    doc.setTextColor(0,62,126); doc.setFontSize(22); doc.text("S.A Samad Enterprises Pvt LTD", 105, 20, { align: "center" });
+    doc.setFontSize(16); doc.text("Invoice", 105, 30, { align: "center" });
+
+    const rows = billingEntries.map(e => [
+        e.company,
+        new Date(e.month + '-01').toLocaleString('default', { month: 'long', year: 'numeric' }),
+        e.date,
+        { content: `₨${e.totalAmount.toFixed(2)}`, styles: { textColor: [217, 119, 6] } },
+        e.billedDays,
+        { content: `₨${e.perDay.toFixed(2)}`, styles: { textColor: [22, 163, 74] } },
+        { content: `₨${e.billedAmount.toFixed(2)}`, styles: { textColor: [220, 38, 38], fontStyle: 'bold' } }
+    ]);
+
+    doc.autoTable({
+        head: [["Company","Month","Date","Total Amount","Days","Per Day","Billed Amount"]],
+        body: rows,
+        startY: 40,
+        theme: 'grid',
+        headStyles: { fillColor: [0, 62, 126], textColor: [255,255,255] },
+        styles: { fontSize: 10 },
+        columnStyles: { 3: { cellWidth: 25 }, 6: { cellWidth: 25 } }
+    });
+
+    const total = billingEntries.reduce((s, e) => s + e.billedAmount, 0);
+    doc.setFontSize(14); doc.setTextColor(220, 38, 38); doc.setFont(undefined, 'bold');
+    doc.text(`Total: ₨${total.toFixed(2)}`, 150, doc.lastAutoTable.finalY + 15);
+    doc.save("Samad_Invoice.pdf");
+}
+
+function exportExcel() {
+    const wb = XLSX.utils.book_new();
+    const header = [["S.A Samad Enterprises Pvt LTD"], ["Invoice"], [""], ["Company", "Month", "Date", "Total Amount", "Billed Days", "Per Day", "Billed Amount"]];
+    const data = billingEntries.map(e => [
+        e.company,
+        new Date(e.month + '-01').toLocaleString('default', { month: 'long', year: 'numeric' }),
+        e.date,
+        e.totalAmount,
+        e.billedDays,
+        e.perDay,
+        e.billedAmount
+    ]);
+    const total = billingEntries.reduce((s, e) => s + e.billedAmount, 0);
+    data.push(["", "", "", "", "", "TOTAL:", total]);
+
+    const ws = XLSX.utils.aoa_to_sheet([...header, ...data]);
+    ws['!cols'] = [{ wch: 22 }, { wch: 18 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 15 }, { wch: 18 }];
+
+    // Styling
+    for (let R = 0; R <= data.length + 3; ++R) {
+        for (let C = 0; C < 7; ++C) {
+            const cell = XLSX.utils.encode_cell({ r: R, c: C });
+            if (!ws[cell]) continue;
+            ws[cell].s = { font: { name: "Calibri", sz: 11 }, alignment: { horizontal: "left" } };
+            if (R === 0) ws[cell].s = { font: { bold: true, sz: 16, color: { rgb: "003E7E" } }, alignment: { horizontal: "center" } };
+            if (R === 3) ws[cell].s = { font: { bold: true, color: { rgb: "FFFFFF" } }, fill: { fgColor: { rgb: "003E7E" } } };
+            if (R >= 4 && R < data.length + 3) {
+                ws[cell].s.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
+                if (C === 3) ws[cell].s.font = { color: { rgb: "D97706" }, bold: true };
+                if (C === 5) ws[cell].s.font = { color: { rgb: "16A34A" } };
+                if (C === 6) ws[cell].s.font = { color: { rgb: "DC2626" }, bold: true };
+            }
+            if (R === data.length + 3) {
+                ws[cell].s = { font: { bold: true, color: { rgb: "DC2626" } }, fill: { fgColor: { rgb: "FEF3C7" } } };
+            }
+        }
+    }
+
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 6 } }];
+    XLSX.utils.book_append_sheet(wb, ws, "Invoice");
+    XLSX.writeFile(wb, "Samad_Invoice.xlsx");
+}
+
+function exportWord() {
+    const doc = new docx.Document({
+        sections: [{
+            children: [
+                new docx.Paragraph({ text: "S.A Samad Enterprises Pvt LTD", heading: docx.HeadingLevel.HEADING_1, alignment: docx.AlignmentType.CENTER }),
+                new docx.Paragraph({ text: "Invoice", heading: docx.HeadingLevel.HEADING_2, alignment: docx.AlignmentType.CENTER }),
+                new docx.Paragraph({ text: "" }),
+                new docx.Table({
+                    rows: [
+                        new docx.TableRow({
+                            children: ["Company", "Month", "Date", "Total", "Days", "Per Day", "Billed"].map(h => 
+                                new docx.TableCell({ children: [new docx.Paragraph({ text: h, bold: true })], background: "003E7E", color: "FFFFFF" }))
+                        }),
+                        ...billingEntries.map(e => new docx.TableRow({
+                            children: [
+                                e.company,
+                                new Date(e.month + '-01').toLocaleString('default', { month: 'long', year: 'numeric' }),
+                                e.date,
+                                `₨${e.totalAmount.toFixed(2)}`,
+                                e.billedDays.toString(),
+                                `₨${e.perDay.toFixed(2)}`,
+                                `₨${e.billedAmount.toFixed(2)}`
+                            ].map((text, i) => new docx.TableCell({
+                                children: [new docx.Paragraph({ text })],
+                                background: i === 3 ? "FFF7ED" : i === 5 ? "F0FDF4" : i === 6 ? "FEF2F2" : "FFFFFF"
+                            }))
+                        })),
+                        new docx.TableRow({
+                            children: ["", "", "", "", "", "TOTAL:", `₨${billingEntries.reduce((s,e)=>s+e.billedAmount,0).toFixed(2)}`].map((t,i) => 
+                                new docx.TableCell({ children: [new docx.Paragraph({ text: t, bold: i===6 })], background: i===6 ? "FECACA" : "FFFFFF" }))
+                        })
+                    ],
+                    width: { size: 100, type: docx.WidthType.PERCENTAGE }
+                })
+            ]
+        }]
+    });
+
+    docx.Packer.toBlob(doc).then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'Samad_Invoice.docx'; a.click();
+    });
+}
+
+// IMPORT
+document.getElementById("loadFile").addEventListener("change", function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e){
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type:'array'});
+        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header:1});
+        billingEntries = jsonData.slice(3).map(row => ({
+            company: row[0] || "", month: row[1] || "", date: row[2] || "",
+            totalAmount: parseFloat(row[3]) || 0, billedDays: parseInt(row[4]) || 0,
+            perDay: parseFloat(row[5]) || 0, billedAmount: parseFloat(row[6]) || 0, totalDays: 30
+        })).filter(e => e.company);
+        saveToStorage(); updateBillingTable(); populateMonthFilter();
+        alert("Data imported successfully!");
+    };
+    reader.readAsArrayBuffer(file);
+});
+
+// DARK MODE
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+}
+if(localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
+</script>
+</body>
+</html>
