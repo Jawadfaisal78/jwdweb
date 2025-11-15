@@ -225,7 +225,6 @@ footer { text-align: center; padding: 20px; color: #64748b; font-size: 0.9em; }
     <div class="menu">
         <label class="load-label" for="loadFile">Import JSON</label>
         <input type="file" id="loadFile" accept=".json" style="display:none;">
-        <!-- Download button removed — auto-save active -->
         <button id="addBillingEntryBtn">Add Entry</button>
         <button id="calculateBtn">Calculate</button>
         <button id="exportBtn">Export</button>
@@ -279,7 +278,7 @@ footer { text-align: center; padding: 20px; color: #64748b; font-size: 0.9em; }
 </main>
 
 <footer>
-    <p>© 2025 S.A Samad Enterprises Pvt LTD — Auto-Saved to Server</p>
+    <p>© 2025 S.A Samad Enterprises Pvt LTD — Auto-Saved to GitHub</p>
 </footer>
 
 <button id="darkModeToggle" onclick="toggleDarkMode()">Dark Mode</button>
@@ -301,6 +300,11 @@ footer { text-align: center; padding: 20px; color: #64748b; font-size: 0.9em; }
 </div>
 
 <script>
+// === GITHUB CONFIG ===
+const GITHUB_TOKEN = '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';
+const GITHUB_REPO = 'mian-samad/samad-billing-data'; // ← CHANGE IF YOUR USERNAME IS DIFFERENT
+const GITHUB_FILE = 'data.json';
+
 let billingEntries = [];
 let editIndex = -1;
 
@@ -310,53 +314,71 @@ function login() {
     const pass = document.getElementById('password').value;
     if (user === 'Mian' && pass === '4150') {
         document.getElementById('loginScreen').style.display = 'none';
-        loadDataFromFile();
+        loadDataFromGitHub();
     } else {
         alert('Invalid credentials!');
     }
 }
 
-// LOAD FROM data.json
-function loadDataFromFile() {
-    fetch('data.json?' + Date.now())
-        .then(res => {
-            if (!res.ok) throw new Error('Not found');
-            return res.json();
-        })
+// LOAD FROM GITHUB
+function loadDataFromGitHub() {
+    showLoading("Loading from GitHub...");
+    fetch(`https://raw.githubusercontent.com/${GITHUB_REPO}/main/${GITHUB_FILE}?t=${Date.now()}`)
+        .then(res => res.ok ? res.json() : Promise.reject())
         .then(data => {
             billingEntries = data;
-            updateDashboard();
-            updateBillingTable();
-            populateMonthFilter();
+            updateDashboard(); updateBillingTable(); populateMonthFilter();
+            hideLoading();
         })
-        .catch(err => {
-            console.log("data.json not found. Starting fresh.");
+        .catch(() => {
+            hideLoading();
+            console.log("No data on GitHub. Starting fresh.");
             billingEntries = [];
             updateDashboard(); updateBillingTable(); populateMonthFilter();
         });
 }
 
-// AUTO-SAVE TO SERVER
-function saveToServer() {
-    showLoading("Saving to server...");
-    fetch('save_data.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(billingEntries)
+// SAVE TO GITHUB
+function saveToGitHub() {
+    showLoading("Saving to GitHub...");
+
+    fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
+        headers: {
+            'Authorization': `token ${GITHUB_TOKEN}`,
+            'Accept': 'application/vnd.github.v3+json'
+        }
+    })
+    .then(res => res.json())
+    .then(file => {
+        const sha = file.sha;
+        const content = btoa(JSON.stringify(billingEntries, null, 2));
+
+        return fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: `Update billing - ${new Date().toLocaleString()}`,
+                content: content,
+                sha: sha,
+                branch: 'main'
+            })
+        });
     })
     .then(res => res.json())
     .then(data => {
         hideLoading();
-        if (data.success) {
-            confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
-        } else {
-            alert("Server save failed: " + data.message);
+        if (data.content) {
+            confetti({ particleCount: 80, spread: 70, origin: { y: 0.7 } });
         }
     })
     .catch(err => {
         hideLoading();
         console.error(err);
-        alert("Connection error. Data saved locally.");
+        alert("GitHub save failed. Data saved locally only.");
     });
 }
 
@@ -377,7 +399,6 @@ function saveEntry() {
 
     const perDay = totalAmount / totalDays;
     const billedAmount = perDay * billedDays;
-
     const entry = { company, month, date, totalAmount, totalDays, billedDays, perDay, billedAmount };
 
     if (editIndex >= 0) {
@@ -393,8 +414,7 @@ function saveEntry() {
     updateDashboard();
     updateBillingTable();
     populateMonthFilter();
-
-    saveToServer(); // AUTO-SAVE
+    saveToGitHub();
 }
 
 function clearForm() {
@@ -404,8 +424,7 @@ function clearForm() {
 }
 
 document.getElementById('cancelEditBtn').addEventListener('click', () => {
-    editIndex = -1;
-    clearForm();
+    editIndex = -1; clearForm();
     document.getElementById('formTitle').textContent = 'Add Billing Entry';
     document.getElementById('cancelEditBtn').style.display = 'none';
 });
@@ -418,7 +437,6 @@ function editEntry(index) {
     document.getElementById('billingAmount').value = e.totalAmount;
     document.getElementById('billingTotalDays').value = e.totalDays;
     document.getElementById('billingDays').value = e.billedDays;
-
     editIndex = index;
     document.getElementById('formTitle').textContent = 'Edit Entry';
     document.getElementById('cancelEditBtn').style.display = 'inline-block';
@@ -428,19 +446,17 @@ function editEntry(index) {
 function deleteEntry(index) {
     if (confirm('Delete this entry?')) {
         billingEntries.splice(index, 1);
-        updateDashboard();
-        updateBillingTable();
-        populateMonthFilter();
-        saveToServer(); // AUTO-SAVE
+        updateDashboard(); updateBillingTable(); populateMonthFilter();
+        saveToGitHub();
     }
 }
 
+// REST OF FUNCTIONS (dashboard, table, export, etc.) — SAME AS BEFORE
 function updateDashboard() {
     const uniqueClients = new Set(billingEntries.map(e => e.company)).size;
     const currentMonth = new Date().toISOString().slice(0,7);
     const thisMonthTotal = billingEntries.filter(e => e.month === currentMonth).reduce((sum, e) => sum + e.billedAmount, 0);
     const totalBilled = billingEntries.reduce((sum, e) => sum + e.billedAmount, 0);
-
     document.getElementById('totalClients').textContent = uniqueClients;
     document.getElementById('thisMonth').textContent = `₨${thisMonthTotal.toFixed(2)}`;
     document.getElementById('totalBilled').textContent = `₨${totalBilled.toFixed(2)}`;
@@ -470,7 +486,6 @@ function updateBillingTable(search = '', month = '') {
     const filtered = billingEntries.filter(e => 
         e.company.toLowerCase().includes(search) && (!month || e.month === month)
     );
-
     filtered.forEach((entry, idx) => {
         const row = document.createElement("tr");
         row.innerHTML = `
@@ -490,7 +505,6 @@ function updateBillingTable(search = '', month = '') {
     });
 }
 
-// CALCULATE
 document.getElementById("calculateBtn").addEventListener("click", () => {
     if (billingEntries.length === 0) return alert("No entries.");
     let total = billingEntries.reduce((sum, e) => sum + e.billedAmount, 0);
@@ -499,14 +513,11 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
     resultDiv.innerHTML = `<strong style="color:#dc2626;">Total Billed: ₨${total.toFixed(2)}</strong>`;
 });
 
-// EXPORT
 document.getElementById("exportBtn").addEventListener("click", () => {
     if (billingEntries.length === 0) return alert("No data to export.");
     document.getElementById("exportMenu").style.display = "block";
 });
-function closeExportMenu() {
-    document.getElementById("exportMenu").style.display = "none";
-}
+function closeExportMenu() { document.getElementById("exportMenu").style.display = "none"; }
 
 function exportFormat(type) {
     closeExportMenu();
@@ -525,11 +536,9 @@ function showLoading(text) {
     document.getElementById("loadingText").textContent = text;
     document.getElementById("loadingOverlay").style.display = "flex";
 }
-function hideLoading() {
-    document.getElementById("loadingOverlay").style.display = "none";
-}
+function hideLoading() { document.getElementById("loadingOverlay").style.display = "none"; }
 
-// EXPORT FUNCTIONS
+// EXPORT FUNCTIONS (PDF, Excel, Word) — SAME AS BEFORE
 function exportPdf() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -650,7 +659,6 @@ function exportWord() {
     });
 }
 
-// DARK MODE
 function toggleDarkMode() {
     document.body.classList.toggle('dark-mode');
 }
