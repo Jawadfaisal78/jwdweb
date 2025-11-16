@@ -300,9 +300,9 @@ footer { text-align: center; padding: 20px; color: #64748b; font-size: 0.9em; }
 </div>
 
 <script>
-// === GITHUB CONFIG ===
+// === GITHUB CONFIG (YOUR REPOS) ===
 const GITHUB_TOKEN = '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';
-const GITHUB_REPO = 'mian-samad/samad-billing-data'; // ← CHANGE IF YOUR USERNAME IS DIFFERENT
+const GITHUB_REPO = 'mian-samad/samad-billing-data';  // ← Your data repo
 const GITHUB_FILE = 'data.json';
 
 let billingEntries = [];
@@ -326,13 +326,13 @@ function loadDataFromGitHub() {
     fetch(`https://raw.githubusercontent.com/${GITHUB_REPO}/main/${GITHUB_FILE}?t=${Date.now()}`)
         .then(res => res.ok ? res.json() : Promise.reject())
         .then(data => {
-            billingEntries = data;
+            billingEntries = Array.isArray(data) ? data : [];
             updateDashboard(); updateBillingTable(); populateMonthFilter();
             hideLoading();
         })
         .catch(() => {
             hideLoading();
-            console.log("No data on GitHub. Starting fresh.");
+            console.log("No data found. Starting fresh.");
             billingEntries = [];
             updateDashboard(); updateBillingTable(); populateMonthFilter();
         });
@@ -348,7 +348,7 @@ function saveToGitHub() {
             'Accept': 'application/vnd.github.v3+json'
         }
     })
-    .then(res => res.json())
+    .then(res => res.ok ? res.json() : Promise.reject())
     .then(file => {
         const sha = file.sha;
         const content = btoa(JSON.stringify(billingEntries, null, 2));
@@ -372,13 +372,13 @@ function saveToGitHub() {
     .then(data => {
         hideLoading();
         if (data.content) {
-            confetti({ particleCount: 80, spread: 70, origin: { y: 0.7 } });
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.7 } });
         }
     })
     .catch(err => {
         hideLoading();
-        console.error(err);
-        alert("GitHub save failed. Data saved locally only.");
+        console.error("GitHub Error:", err);
+        alert("Save failed. Check console (F12). Data saved locally.");
     });
 }
 
@@ -451,7 +451,7 @@ function deleteEntry(index) {
     }
 }
 
-// REST OF FUNCTIONS (dashboard, table, export, etc.) — SAME AS BEFORE
+// DASHBOARD, TABLE, EXPORT (SAME AS BEFORE)
 function updateDashboard() {
     const uniqueClients = new Set(billingEntries.map(e => e.company)).size;
     const currentMonth = new Date().toISOString().slice(0,7);
@@ -538,7 +538,7 @@ function showLoading(text) {
 }
 function hideLoading() { document.getElementById("loadingOverlay").style.display = "none"; }
 
-// EXPORT FUNCTIONS (PDF, Excel, Word) — SAME AS BEFORE
+// EXPORT FUNCTIONS (PDF, Excel, Word) — SAME
 function exportPdf() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -599,7 +599,7 @@ function exportExcel() {
             if (R === 3) ws[cell].s = { font: { bold: true, color: { rgb: "FFFFFF" } }, fill: { fgColor: { rgb: "003E7E" } } };
             if (R >= 4 && R < data.length + 3) {
                 ws[cell].s.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
-                if (C === 3) ws[cell].s.font = { color: { rgb: "D97706" }, bold: true };
+                if (_epoch === 3) ws[cell].s.font = { color: { rgb: "D97706" }, bold: true };
                 if (C === 5) ws[cell].s.font = { color: { rgb: "16A34A" } };
                 if (C === 6) ws[cell].s.font = { color: { rgb: "DC2626" }, bold: true };
             }
