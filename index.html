@@ -300,9 +300,9 @@ footer { text-align: center; padding: 20px; color: #64748b; font-size: 0.9em; }
 </div>
 
 <script>
-// === GITHUB CONFIG (YOUR REPOS) ===
+// === GITHUB CONFIG (YOUR REPO) ===
 const GITHUB_TOKEN = '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';
-const GITHUB_REPO = 'mian-samad/samad-billing-data';  // ← Your data repo
+const GITHUB_REPO = 'Jawadfaisal78/samad-billing-data';  // ← YOUR DATA REPO
 const GITHUB_FILE = 'data.json';
 
 let billingEntries = [];
@@ -332,23 +332,20 @@ function loadDataFromGitHub() {
         })
         .catch(() => {
             hideLoading();
-            console.log("No data found. Starting fresh.");
+            console.log("No data. Starting fresh.");
             billingEntries = [];
             updateDashboard(); updateBillingTable(); populateMonthFilter();
         });
 }
 
-// SAVE TO GITHUB
+// SAVE TO GITHUB (AUTO-CREATE FILE IF NOT EXISTS)
 function saveToGitHub() {
     showLoading("Saving to GitHub...");
 
-    fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
-        headers: {
-            'Authorization': `token ${GITHUB_TOKEN}`,
-            'Accept': 'application/vnd.github.v3+json'
-        }
+    fetch(`https://api.github.com/repos/${ountain_REPO}/contents/${GITHUB_FILE}`, {
+        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' }
     })
-    .then(res => res.ok ? res.json() : Promise.reject())
+    .then(res => res.ok ? res.json() : Promise.reject(res.status))
     .then(file => {
         const sha = file.sha;
         const content = btoa(JSON.stringify(billingEntries, null, 2));
@@ -361,24 +358,43 @@ function saveToGitHub() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                message: `Update billing - ${new Date().toLocaleString()}`,
+                message: `Update - ${new Date().toLocaleString()}`,
                 content: content,
                 sha: sha,
                 branch: 'main'
             })
         });
     })
+    .catch(err => {
+        if (err === 404) {
+            const content = btoa(JSON.stringify(billingEntries, null, 2));
+            return fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `Create data.json - ${new Date().toLocaleString()}`,
+                    content: content,
+                    branch: 'main'
+                })
+            });
+        }
+        throw err;
+    })
     .then(res => res.json())
     .then(data => {
         hideLoading();
         if (data.content) {
-            confetti({ particleCount: 100, spread: 70, origin: { y: 0.7 } });
+            confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 } });
         }
     })
     .catch(err => {
         hideLoading();
-        console.error("GitHub Error:", err);
-        alert("Save failed. Check console (F12). Data saved locally.");
+        console.error("Save Error:", err);
+        alert("Save failed. Check: Repo public? data.json added? Token valid?");
     });
 }
 
@@ -393,7 +409,7 @@ function saveEntry() {
     const billedDays = parseInt(document.getElementById('billingDays').value) || 0;
 
     if (!company || !month || !date || totalAmount <= 0 || billedDays <= 0) {
-        alert("Please fill all fields correctly.");
+        alert("Fill all fields correctly.");
         return;
     }
 
@@ -451,7 +467,7 @@ function deleteEntry(index) {
     }
 }
 
-// DASHBOARD, TABLE, EXPORT (SAME AS BEFORE)
+// DASHBOARD, TABLE, EXPORT (FULLY WORKING)
 function updateDashboard() {
     const uniqueClients = new Set(billingEntries.map(e => e.company)).size;
     const currentMonth = new Date().toISOString().slice(0,7);
@@ -538,7 +554,7 @@ function showLoading(text) {
 }
 function hideLoading() { document.getElementById("loadingOverlay").style.display = "none"; }
 
-// EXPORT FUNCTIONS (PDF, Excel, Word) — SAME
+// EXPORT FUNCTIONS (PDF, Excel, Word)
 function exportPdf() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -599,7 +615,7 @@ function exportExcel() {
             if (R === 3) ws[cell].s = { font: { bold: true, color: { rgb: "FFFFFF" } }, fill: { fgColor: { rgb: "003E7E" } } };
             if (R >= 4 && R < data.length + 3) {
                 ws[cell].s.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
-                if (_epoch === 3) ws[cell].s.font = { color: { rgb: "D97706" }, bold: true };
+                if (C === 3) ws[cell].s.font = { color: { rgb: "D97706" }, bold: true };
                 if (C === 5) ws[cell].s.font = { color: { rgb: "16A34A" } };
                 if (C === 6) ws[cell].s.font = { color: { rgb: "DC2626" }, bold: true };
             }
