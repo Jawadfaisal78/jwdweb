@@ -223,8 +223,8 @@ footer { text-align: center; padding: 20px; color: #64748b; font-size: 0.9em; }
 <header>
     <h1>S.A Samad Enterprises Pvt LTD</h1>
     <div class="menu">
-        <label class="load-label" for="loadFile">Import JSON</label>
-        <input type="file" id="loadFile" accept=".json" style="display:none;">
+        <label class="load-label" for="loadFile">Import</label>
+        <input type="file" id="loadFile" style="display:none;">
         <button id="addBillingEntryBtn">Add Entry</button>
         <button id="calculateBtn">Calculate</button>
         <button id="exportBtn">Export</button>
@@ -278,7 +278,7 @@ footer { text-align: center; padding: 20px; color: #64748b; font-size: 0.9em; }
 </main>
 
 <footer>
-    <p>© 2025 S.A Samad Enterprises Pvt LTD — Auto-Saved to GitHub</p>
+    <p>© 2025 S.A Samad Enterprises Pvt LTD — Professional Billing System</p>
 </footer>
 
 <button id="darkModeToggle" onclick="toggleDarkMode()">Dark Mode</button>
@@ -296,16 +296,11 @@ footer { text-align: center; padding: 20px; color: #64748b; font-size: 0.9em; }
 <!-- LOADING -->
 <div id="loadingOverlay">
     <div class="loader"></div>
-    <p id="loadingText">Loading...</p>
+    <p id="loadingText">Generating...</p>
 </div>
 
 <script>
-// === GITHUB CONFIG (YOUR REPO) ===
-const GITHUB_TOKEN = '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';
-const GITHUB_REPO = 'Jawadfaisal78/samad-billing-data';  // ← YOUR DATA REPO
-const GITHUB_FILE = 'data.json';
-
-let billingEntries = [];
+let billingEntries = JSON.parse(localStorage.getItem('billingEntries')) || [];
 let editIndex = -1;
 
 // LOGIN
@@ -314,88 +309,16 @@ function login() {
     const pass = document.getElementById('password').value;
     if (user === 'Mian' && pass === '4150') {
         document.getElementById('loginScreen').style.display = 'none';
-        loadDataFromGitHub();
+        setTimeout(loadApp, 300);
     } else {
         alert('Invalid credentials!');
     }
 }
 
-// LOAD FROM GITHUB
-function loadDataFromGitHub() {
-    showLoading("Loading from GitHub...");
-    fetch(`https://raw.githubusercontent.com/${GITHUB_REPO}/main/${GITHUB_FILE}?t=${Date.now()}`)
-        .then(res => res.ok ? res.json() : Promise.reject())
-        .then(data => {
-            billingEntries = Array.isArray(data) ? data : [];
-            updateDashboard(); updateBillingTable(); populateMonthFilter();
-            hideLoading();
-        })
-        .catch(() => {
-            hideLoading();
-            console.log("No data. Starting fresh.");
-            billingEntries = [];
-            updateDashboard(); updateBillingTable(); populateMonthFilter();
-        });
-}
-
-// SAVE TO GITHUB (AUTO-CREATE FILE IF NOT EXISTS)
-function saveToGitHub() {
-    showLoading("Saving to GitHub...");
-
-    fetch(`https://api.github.com/repos/${ountain_REPO}/contents/${GITHUB_FILE}`, {
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' }
-    })
-    .then(res => res.ok ? res.json() : Promise.reject(res.status))
-    .then(file => {
-        const sha = file.sha;
-        const content = btoa(JSON.stringify(billingEntries, null, 2));
-
-        return fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `token ${GITHUB_TOKEN}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                message: `Update - ${new Date().toLocaleString()}`,
-                content: content,
-                sha: sha,
-                branch: 'main'
-            })
-        });
-    })
-    .catch(err => {
-        if (err === 404) {
-            const content = btoa(JSON.stringify(billingEntries, null, 2));
-            return fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `token ${GITHUB_TOKEN}`,
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    message: `Create data.json - ${new Date().toLocaleString()}`,
-                    content: content,
-                    branch: 'main'
-                })
-            });
-        }
-        throw err;
-    })
-    .then(res => res.json())
-    .then(data => {
-        hideLoading();
-        if (data.content) {
-            confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 } });
-        }
-    })
-    .catch(err => {
-        hideLoading();
-        console.error("Save Error:", err);
-        alert("Save failed. Check: Repo public? data.json added? Token valid?");
-    });
+function loadApp() {
+    updateDashboard();
+    updateBillingTable();
+    populateMonthFilter();
 }
 
 // SAVE ENTRY
@@ -409,12 +332,13 @@ function saveEntry() {
     const billedDays = parseInt(document.getElementById('billingDays').value) || 0;
 
     if (!company || !month || !date || totalAmount <= 0 || billedDays <= 0) {
-        alert("Fill all fields correctly.");
+        alert("Please fill all fields correctly.");
         return;
     }
 
     const perDay = totalAmount / totalDays;
     const billedAmount = perDay * billedDays;
+
     const entry = { company, month, date, totalAmount, totalDays, billedDays, perDay, billedAmount };
 
     if (editIndex >= 0) {
@@ -427,10 +351,9 @@ function saveEntry() {
     }
 
     clearForm();
-    updateDashboard();
+    saveToStorage();
     updateBillingTable();
     populateMonthFilter();
-    saveToGitHub();
 }
 
 function clearForm() {
@@ -440,7 +363,8 @@ function clearForm() {
 }
 
 document.getElementById('cancelEditBtn').addEventListener('click', () => {
-    editIndex = -1; clearForm();
+    editIndex = -1;
+    clearForm();
     document.getElementById('formTitle').textContent = 'Add Billing Entry';
     document.getElementById('cancelEditBtn').style.display = 'none';
 });
@@ -453,6 +377,7 @@ function editEntry(index) {
     document.getElementById('billingAmount').value = e.totalAmount;
     document.getElementById('billingTotalDays').value = e.totalDays;
     document.getElementById('billingDays').value = e.billedDays;
+
     editIndex = index;
     document.getElementById('formTitle').textContent = 'Edit Entry';
     document.getElementById('cancelEditBtn').style.display = 'inline-block';
@@ -462,17 +387,23 @@ function editEntry(index) {
 function deleteEntry(index) {
     if (confirm('Delete this entry?')) {
         billingEntries.splice(index, 1);
-        updateDashboard(); updateBillingTable(); populateMonthFilter();
-        saveToGitHub();
+        saveToStorage();
+        updateBillingTable();
+        populateMonthFilter();
     }
 }
 
-// DASHBOARD, TABLE, EXPORT (FULLY WORKING)
+function saveToStorage() {
+    localStorage.setItem('billingEntries', JSON.stringify(billingEntries));
+    updateDashboard();
+}
+
 function updateDashboard() {
     const uniqueClients = new Set(billingEntries.map(e => e.company)).size;
     const currentMonth = new Date().toISOString().slice(0,7);
     const thisMonthTotal = billingEntries.filter(e => e.month === currentMonth).reduce((sum, e) => sum + e.billedAmount, 0);
     const totalBilled = billingEntries.reduce((sum, e) => sum + e.billedAmount, 0);
+
     document.getElementById('totalClients').textContent = uniqueClients;
     document.getElementById('thisMonth').textContent = `₨${thisMonthTotal.toFixed(2)}`;
     document.getElementById('totalBilled').textContent = `₨${totalBilled.toFixed(2)}`;
@@ -502,6 +433,7 @@ function updateBillingTable(search = '', month = '') {
     const filtered = billingEntries.filter(e => 
         e.company.toLowerCase().includes(search) && (!month || e.month === month)
     );
+
     filtered.forEach((entry, idx) => {
         const row = document.createElement("tr");
         row.innerHTML = `
@@ -521,6 +453,7 @@ function updateBillingTable(search = '', month = '') {
     });
 }
 
+// CALCULATE
 document.getElementById("calculateBtn").addEventListener("click", () => {
     if (billingEntries.length === 0) return alert("No entries.");
     let total = billingEntries.reduce((sum, e) => sum + e.billedAmount, 0);
@@ -529,11 +462,14 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
     resultDiv.innerHTML = `<strong style="color:#dc2626;">Total Billed: ₨${total.toFixed(2)}</strong>`;
 });
 
+// EXPORT
 document.getElementById("exportBtn").addEventListener("click", () => {
     if (billingEntries.length === 0) return alert("No data to export.");
     document.getElementById("exportMenu").style.display = "block";
 });
-function closeExportMenu() { document.getElementById("exportMenu").style.display = "none"; }
+function closeExportMenu() {
+    document.getElementById("exportMenu").style.display = "none";
+}
 
 function exportFormat(type) {
     closeExportMenu();
@@ -552,9 +488,11 @@ function showLoading(text) {
     document.getElementById("loadingText").textContent = text;
     document.getElementById("loadingOverlay").style.display = "flex";
 }
-function hideLoading() { document.getElementById("loadingOverlay").style.display = "none"; }
+function hideLoading() {
+    document.getElementById("loadingOverlay").style.display = "none";
+}
 
-// EXPORT FUNCTIONS (PDF, Excel, Word)
+// EXPORT FUNCTIONS
 function exportPdf() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -606,6 +544,7 @@ function exportExcel() {
     const ws = XLSX.utils.aoa_to_sheet([...header, ...data]);
     ws['!cols'] = [{ wch: 22 }, { wch: 18 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 15 }, { wch: 18 }];
 
+    // Styling
     for (let R = 0; R <= data.length + 3; ++R) {
         for (let C = 0; C < 7; ++C) {
             const cell = XLSX.utils.encode_cell({ r: R, c: C });
@@ -675,9 +614,32 @@ function exportWord() {
     });
 }
 
+// IMPORT
+document.getElementById("loadFile").addEventListener("change", function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e){
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type:'array'});
+        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header:1});
+        billingEntries = jsonData.slice(3).map(row => ({
+            company: row[0] || "", month: row[1] || "", date: row[2] || "",
+            totalAmount: parseFloat(row[3]) || 0, billedDays: parseInt(row[4]) || 0,
+            perDay: parseFloat(row[5]) || 0, billedAmount: parseFloat(row[6]) || 0, totalDays: 30
+        })).filter(e => e.company);
+        saveToStorage(); updateBillingTable(); populateMonthFilter();
+        alert("Data imported successfully!");
+    };
+    reader.readAsArrayBuffer(file);
+});
+
+// DARK MODE
 function toggleDarkMode() {
     document.body.classList.toggle('dark-mode');
+    localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
 }
+if(localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
 </script>
 </body>
 </html>
